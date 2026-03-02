@@ -1,0 +1,53 @@
+id,category,name,objective,method,pros,cons
+1,Cognitivo-Conductual,Reestructuración Cognitiva,Identificar y cambiar patrones de pensamiento distorsionado.,"Identificar pensamientos automáticos, cuestionar con evidencia, buscar alternativas realistas.","Aborda la raíz, empodera al individuo.","Requiere capacidad metacognitiva, puede parecer forzada."
+2,Cognitivo-Conductual,Activación Conductual,Aumentar conductas que generan placer y logro.,Cronograma de actividades programadas independientemente del estado emocional.,Rompe el ciclo de la depresión.,Puede encontrar resistencia inicial por falta de motivación.
+3,Cognitivo-Conductual,Exposición y Prevención de Respuesta (ERP),Reducir miedo y evitación.,Jerarquía de exposición a estímulos temidos evitando compulsiones.,Gold standard para TOC y fobias.,Altamente ansiógena inicialmente.
+4,Cognitivo-Conductual,Entrenamiento en Resolución de Problemas,Resolver problemas sistemáticamente.,"Definir problema, metas, generar soluciones, elegir e implementar.","Transferible a contextos, reduce rumiación.",Lenta para crisis inmediatas.
+5,Cognitivo-Conductual,Autorregistro y Automonitoreo,Aumentar conciencia de patrones.,"Registrar conductas, pensamientos y emociones en formatos estructurados.","Genera datos objetivos, promueve metacognición.","Puede ser tedioso, requiere consistencia."
+6,Cognitivo-Conductual,Entrenamiento de Habilidades Sociales,Desarrollar habilidades de interacción.,"Psicoeducación, modelado, role-play de contacto visual, escucha, asertividad.",Mejora relaciones y reduce aislamiento.,Generalización no automática.
+7,Cognitivo-Conductual,Entrenamiento en Control de Ira,Reducir respuestas de ira desadaptativas.,"Identificar triggers, señales físicas, técnicas de relajación y reformulación.","Previene agresión, mejora salud.",Puede no abordar causas profundas.
+8,ABA,Reforzamiento Positivo,Aumentar conductas deseadas.,Presentar estímulo reforzante inmediatamente después de la conducta.,"Científicamente validado, robusto.",Dependencia de recompensas externas.
+9,ABA,Extinción Operante,Reducir conductas indeseadas.,Suprimir consistentemente la consecuencia que mantiene la conducta.,"Efectivo a largo plazo, no es castigo.",Explosión de extinción inicial.
+10,ABA,Reforzamiento Diferencial,Aumentar deseadas/Reducir indeseadas.,Reforzar conductas alternativas (DRA) o incompatibles mientras se extinguen otras.,Menos adverso que el castigo.,Requiere identificación precisa de conductas.
+11,ABA,Moldeamiento (Shaping),Enseñar conductas complejas nuevas.,Reforzar aproximaciones sucesivas hacia la conducta meta.,Permite enseñar conductas desde cero.,"Lento, requiere mucha observación."
+12,ABA,Encadenamiento,Enseñar secuencias de conducta.,Desglosar en pasos (eslabones) y enseñar secuencialmente.,Útil para autonomía en vida diaria.,"Tedioso, errores requieren retroceso."
+13,ABA,Desvanecimiento de Estímulos,Transferir control a estímulos naturales.,Reducir gradualmente la ayuda o prompt inicial.,Promueve independencia.,Requiere precisión en el timing.
+14,ABA,Tiempo Fuera,Reducir conducta problemática.,Remoción breve del ambiente reforzante.,"Rápido, no físico.",Requiere que el ambiente normal sea rico en refuerzos.
+15,ABA,Costo de Respuesta,Reducir conducta mediante penalización.,"Retirar un reforzador ganado previamente (fichas, tiempo).",Claro vínculo conducta-consecuencia.,Genera frustración.
+16,Contextual/ACT,Desusión Cognitiva,Ver pensamientos como eventos mentales.,"Metáforas (nubes), repetición de palabras, etiquetar 'tengo el pensamiento'.",Reduce poder emocional de pensamientos.,Puede parecer extraña al inicio.
+17,Contextual/ACT,Clarificación de Valores,Identificar dirección vital.,"Reflexión, ejercicios (funeral), distinguir valores de metas.",Proporciona motivación profunda.,Puede generar angustia al ver discrepancias.
+18,Contextual/ACT,Acción Comprometida,Actuar según valores.,Metas SMART alineadas a valores a pesar de barreras internas.,Genera movimiento y resiliencia.,Dificultad ante barreras emocionales.
+19,Contextual/ACT,Decentering y Perspectiva de Observador,Observar experiencias sin identificarse.,"Meditación, observar fenómenos como testigo.",Reduce identificación con lo negativo.,Requiere práctica extendida.
+20,Contextual/ACT,Aceptación Radical,Tolerar experiencias sin evitación.,Permitir experiencias desagradables sin intentar cambiarlas.,"Ahorra energía, rompe ciclos de lucha.","Contraintuitiva, puede confundirse con resignación."
+21,Regulación Emocional,Habilidades TIPP,Regular crisis fisiológica.,"Temperatura (hielo), Ejercicio intenso, Respiración pautada, Relajación.",Rápidamente efectiva en crisis.,Efectos temporales.
+22,Regulación Emocional,Habilidades ACCEPTS,Distracción de angustia inmediata.,"Actividades, Contribución, Comparaciones, Emociones opuestas.",Interrumpe rumiación en crisis.,"Es una estrategia temporal, no resuelve."
+23,Regulación Emocional,Auto-Calma (Self-Soothing),Calmar sistema nervioso.,"Estimulación deliberada de los 5 sentidos (vista, oído, tacto...).",Accesible y placentera.,Puede generar habituación.
+24,Regulación Emocional,IMPROVE the Moment,Mejorar tolerancia al momento.,"Imaginería, Significado, Oración, Relajación, Una cosa a la vez.","Flexible, refuerza resiliencia.",Requiere creatividad cognitiva.
+25,Exposición,Desensibilización Sistemática,Reducir ansiedad a estímulos.,Relajación profunda + exposición imaginal gradual en jerarquía.,Menos traumática que en vivo.,"Lenta, requiere entrenamiento en relajación."
+26,Exposición,Exposición Gradual en Vivo,Reducir miedo por habituación.,Exposición real escalonada sin escape.,Aprendizaje conductual fuerte.,Altamente ansiógena inicialmente.
+27,Exposición,Exposición Imaginal,Procesar trauma.,Relatar memoria traumática en detalle repetidamente.,Efectiva para TEPT.,"Muy angustiante, requiere cuidado."
+28,Habilidades,Entrenamiento de Habilidades Conductuales (BST),Adquirir habilidades complejas.,"Instrucción, Modelado, Ensayo, Retroalimentación.","Altamente efectiva, componentes múltiples.",Intensiva en tiempo.
+29,Habilidades,Modelado Conductual,Enseñar por imitación.,Demostración clara de la conducta deseada.,Aprendizaje vicario rápido.,Requiere un buen modelo.
+30,Habilidades,Ensayo de Rol (Role-Play),Practicar en ambiente seguro.,Actuar situaciones desafiantes con terapeuta.,Feedback inmediato sin riesgos.,Puede dar vergüenza.
+31,Mindfulness,Entrenamiento de Atención (ATT),Control atencional voluntario.,Escuchar sonidos selectivos y cambiar foco.,Reduce rumiación y ansiedad.,"Tedioso, requiere consistencia."
+32,Mindfulness,Mindfulness/Meditación,Conciencia presente no juzgadora.,"Atención a la respiración, retorno suave tras distracción.","Neuroplasticidad, regulación emocional.",Requiere práctica prolongada.
+33,Mindfulness,Body Scan,Conexión mente-cuerpo.,Recorrido atencional por sensaciones corporales.,Reconocimiento emocional somático.,"Lento, puede activar traumas."
+34,Mindfulness,Respiración Diafragmática,Activar sistema parasimpático.,Respiración lenta controlada con el vientre.,Reduce activación fisiológica.,Insuficiente en crisis de pánico severo.
+35,Auto-Manejo,Autorregistro (Self-Monitoring),Conciencia de patrones.,Registro sistemático propio de conductas/emociones.,Efecto reactivo positivo.,Requiere disciplina.
+36,Auto-Manejo,Establecimiento de Metas,Definir progreso.,Metas SMART colaborativas.,Claridad y motivación.,Riesgo de frustración si son irreales.
+37,Auto-Manejo,Autorrefuerzo,Auto-motivación.,Administrarse premios tras cumplir metas.,Empodera agencia.,Posible 'trampa'.
+38,Auto-Manejo,Contratos de Contingencia,Acuerdo explícito.,Contrato escrito de conducta-consecuencia.,Claridad de expectativas.,Puede sentirse rígido o coercitivo.
+39,Estímulos,Análisis ABC,Identificar relaciones funcionales.,Analizar Antecedente-Conducta-Consecuencia.,Base de intervención.,Puede ser complejo.
+40,Estímulos,Análisis Funcional,Comprender el propósito de la conducta.,"Identificar función (atención, escape, tangible, sensorial).",Crucial para eficacia.,Requiere entrenamiento experto.
+41,Estímulos,Mapeo de Contingencia,Organizar visualmente relaciones.,Diagramas visuales de desencadenantes y consecuencias.,Útil para procesamiento visual.,Puede simplificar demasiado.
+42,Estímulos,Control de Estímulos,Modificar ambiente.,Alterar entorno para facilitar/prevenir conductas.,"Preventivo, bajo costo.",No siempre es posible modificar el entorno.
+43,Motivación,Entrevista Motivacional,Resolver ambivalencia.,"Preguntas abiertas, escucha, evocar charla de cambio.",Aumenta motivación intrínseca.,Requiere habilidades específicas.
+44,Motivación,Apoyo a la Autonomía,Fomentar elección.,Ofrecer opciones y justificaciones.,Mejora adherencia y satisfacción.,Puede parecer permisivo.
+45,Motivación,Teoría de la Autodeterminación,Satisfacer necesidades básicas.,"Promover autonomía, competencia y relación.",Cambio sostenible.,Requiere visión sistémica.
+46,Mantenimiento,Desvanecimiento del Refuerzo,Reducir dependencia.,Pasar a refuerzo intermitente gradualmente.,Resistencia a extinción.,Riesgo si es muy rápido.
+47,Mantenimiento,Generalización de Conducta,Transferir a vida real.,Entrenar en múltiples contextos con variaciones.,Asegura utilidad real.,Requiere planificación costosa.
+48,Mantenimiento,Planeamiento de Mantenimiento,Prevenir recaídas.,Identificar riesgos futuros y planes de acción.,Empodera post-terapia.,El paciente puede olvidar el plan.
+49,Mantenimiento,ABC Renewal Prevention,Prevenir resurgimiento por contexto.,Entrenar y reforzar en contextos originales.,Científicamente robusto.,Complejo de implementar.
+50,Compasión,Auto-Compasión,Amabilidad ante la dificultad.,Tratarse con calidez en lugar de crítica.,"Mejora resiliencia, reduce vergüenza.",Puede confundirse con auto-indulgencia.
+51,Compasión,Meditación de Bondad Amorosa,Generar afecto positivo.,Frases de deseo de bienestar a uno mismo y otros.,Aumenta conexión social.,Puede parecer artificial.
+52,Compasión,Terapia Enfocada en Compasión,Regular sistemas emocionales.,Activar sistema de calma y seguridad.,Efectiva para vergüenza y trauma.,Puede ser intensa emocionalmente.
