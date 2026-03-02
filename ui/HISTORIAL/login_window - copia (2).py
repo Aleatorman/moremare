@@ -86,9 +86,7 @@ class LoginWindow(ctk.CTk):
         success, uid = self.auth.login(pwd)
         
         if success:
-            # LA SOLUCIÓN: Ocultamos la ventana en lugar de destruirla para evitar el error rojo
-            self.withdraw()
-            # Llamamos al dashboard
+            self.destroy()
             self.on_login_success(uid)
         else:
             self.entry_pass.configure(border_color="red")

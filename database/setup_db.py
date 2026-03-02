@@ -39,12 +39,35 @@ def create_tables(conn):
         # 4. MACROCONTINGENCIAS
         cursor.execute('''CREATE TABLE IF NOT EXISTS macrocontingencies (id INTEGER PRIMARY KEY AUTOINCREMENT, patient_id INTEGER, group_type TEXT, group_name TEXT, beliefs_values TEXT, customs_lifestyles TEXT, intra_analysis TEXT, inter_analysis TEXT, FOREIGN KEY (patient_id) REFERENCES patients (id) ON DELETE CASCADE);''')
         cursor.execute('''CREATE TABLE IF NOT EXISTS macro_normative_functions (id INTEGER PRIMARY KEY AUTOINCREMENT, macro_id INTEGER, function_type TEXT, exercised_by TEXT, description TEXT);''')
-        cursor.execute('''CREATE TABLE IF NOT EXISTS macro_matrix_states (id INTEGER PRIMARY KEY AUTOINCREMENT, macro_id INTEGER, row_idx INTEGER, col_idx INTEGER, active INTEGER);''')
+        
+        # ---> PUNTO 3: MATRIZ DE CORRESPONDENCIAS MACROCONTINGENCIAL <---
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS macro_correspondences (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                macro_id INTEGER NOT NULL,
+                axis_1 TEXT NOT NULL, 
+                axis_2 TEXT NOT NULL, 
+                has_correspondence BOOLEAN NOT NULL DEFAULT 1,
+                FOREIGN KEY (macro_id) REFERENCES macrocontingencies (id) ON DELETE CASCADE
+            );
+        ''')
 
         # 5. GÉNESIS
         cursor.execute('''CREATE TABLE IF NOT EXISTS genesis_history (id INTEGER PRIMARY KEY AUTOINCREMENT, patient_id INTEGER, microcontingency_id INTEGER, origin_history TEXT, functional_history TEXT, FOREIGN KEY (patient_id) REFERENCES patients (id) ON DELETE CASCADE);''')
+        
+        # ---> PUNTO 2: ESTILOS INTERACTIVOS <---
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS genesis_interactive_styles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                genesis_id INTEGER NOT NULL,
+                arrangement_type TEXT NOT NULL, 
+                response_style TEXT,
+                FOREIGN KEY (genesis_id) REFERENCES genesis_history (id) ON DELETE CASCADE
+            );
+        ''')
 
         # 6. INTERVENCIÓN
+        # ---> PUNTO 4: ESTRATEGIAS FUNCIONALES DE INTERVENCIÓN <---
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS intervention_plans (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,13 +81,32 @@ def create_tables(conn):
                 sol_cambio_propia INTEGER DEFAULT 0,
                 sol_nuevas_micro INTEGER DEFAULT 0,
                 sol_opciones_func INTEGER DEFAULT 0,
-                strategy_morphology TEXT,
-                strategy_actors TEXT,
-                strategy_context TEXT,
+                strategy_adquisition TEXT,
+                strategy_precision TEXT,
+                strategy_opportunity TEXT,
+                strategy_tendency TEXT,
+                strategy_effect TEXT,
                 techniques_text TEXT,
                 FOREIGN KEY (patient_id) REFERENCES patients (id) ON DELETE CASCADE
             );
         ''')
+
+        # ---> PUNTO 5: ANÁLISIS DE DESPROFESIONALIZACIÓN <---
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS deprofessionalization_analysis (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                intervention_plan_id INTEGER NOT NULL,
+                solution_option TEXT NOT NULL, 
+                user_motivation TEXT,          
+                emotional_cost TEXT,           
+                available_resources TEXT,      
+                short_long_term_effects TEXT,  
+                is_selected BOOLEAN DEFAULT 0, 
+                FOREIGN KEY (intervention_plan_id) REFERENCES intervention_plans (id) ON DELETE CASCADE
+            );
+        ''')
+
+        # (PUNTO 1 IGNORADO - Las bibliotecas se mantienen igual para los psicólogos clínicos)
         cursor.execute('''CREATE TABLE IF NOT EXISTS library_techniques (id INTEGER PRIMARY KEY AUTOINCREMENT, category TEXT, name TEXT, objective TEXT, method TEXT, pros TEXT, cons TEXT);''')
         cursor.execute('''CREATE TABLE IF NOT EXISTS library_sources (id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT);''')
 

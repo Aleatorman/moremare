@@ -1,221 +1,246 @@
 import customtkinter as ctk
-from tkinter import messagebox
+from tkinter import messagebox, ttk
 from src.clinical.intervention.intervention_manager import InterventionManager
-from src.clinical.micro.micro_manager import MicroManager
-from src.clinical.patient_manager import PatientManager
 
 class InterventionPanel(ctk.CTkFrame):
     def __init__(self, parent, patient_id):
         super().__init__(parent, fg_color="transparent")
         self.patient_id = patient_id
         self.manager = InterventionManager()
-        self.micro_manager = MicroManager()
-        self.patient_manager = PatientManager()
         
-        # Variables de los checkboxes
-        self.var_s1 = ctk.IntVar()
-        self.var_s2 = ctk.IntVar()
-        self.var_s3 = ctk.IntVar()
-        self.var_s4 = ctk.IntVar()
-        self.var_s5 = ctk.IntVar()
-        self.var_s6 = ctk.IntVar()
-        self.var_s7 = ctk.IntVar()
+        self.micro_map = {}
+        self.current_micro_id = None
+        
+        self.solution_options = [
+            "1. Alterar prácticas macrocontingenciales",
+            "2. Desligar de prácticas macrocontingenciales",
+            "3. Mantenimiento del comportamiento del usuario en la micro",
+            "4. Cambio del comportamiento de los otros",
+            "5. Cambio del comportamiento del propio usuario",
+            "6. Inserción en nuevas microcontingencias",
+            "7. Uso de conductas funcionales disponibles"
+        ]
+        
+        self.deprof_entries = {}
 
         self._setup_ui()
         self._load_micros()
 
     def _setup_ui(self):
-        ctk.CTkLabel(self, text="5. Plan de Intervención", font=("Arial", 22, "bold"), text_color="#333").pack(anchor="w", pady=(0, 10))
-        
-        # --- SISTEMA DE PESTAÑAS (Restaurado) ---
-        self.tabview = ctk.CTkTabview(self, width=900, height=600)
-        self.tabview.pack(fill="both", expand=True)
+        header = ctk.CTkFrame(self, fg_color="transparent")
+        header.pack(fill="x", pady=(0, 10))
+        ctk.CTkLabel(header, text="5. Intervención y Desprofesionalización", font=("Roboto", 22, "bold")).pack(side="left")
 
-        self.tabview.add("Plan de Intervención")
-        self.tabview.add("Biblioteca de Técnicas")
-        
-        # Construir cada pestaña
-        self._setup_tab_capture(self.tabview.tab("Plan de Intervención"))
-        self._setup_tab_library(self.tabview.tab("Biblioteca de Técnicas"))
-
-    def _setup_tab_capture(self, parent_frame):
-        # Selector de Microcontingencia
-        top_frame = ctk.CTkFrame(parent_frame, fg_color="transparent")
-        top_frame.pack(fill="x", pady=5)
-        ctk.CTkLabel(top_frame, text="Microcontingencia a intervenir:", font=("Arial", 12, "bold")).pack(side="left", padx=5)
-        self.combo_micros = ctk.CTkComboBox(top_frame, values=[], width=300, command=self._on_micro_selected)
+        self.selector_frame = ctk.CTkFrame(self, fg_color=("gray90", "gray20"), corner_radius=10)
+        self.selector_frame.pack(fill="x", pady=10)
+        ctk.CTkLabel(self.selector_frame, text="Plan para Microcontingencia:", font=("Roboto", 12, "bold")).pack(side="left", padx=15, pady=15)
+        self.combo_micros = ctk.CTkComboBox(self.selector_frame, width=350, command=self._on_micro_selected)
         self.combo_micros.pack(side="left", padx=10)
 
-        self.scroll = ctk.CTkScrollableFrame(parent_frame, fg_color="transparent")
-        self.scroll.pack(fill="both", expand=True, pady=10)
+        self.status_indicator = ctk.CTkLabel(self.selector_frame, text="⚪ Pendiente", font=("Roboto", 12, "bold"), text_color="gray")
+        self.status_indicator.pack(side="left", padx=20)
 
-        # A. METAS VS OBJETIVOS
-        ctk.CTkLabel(self.scroll, text="A. Contraste de Metas y Objetivos", font=("Arial", 14, "bold"), text_color="#2c3e50").pack(anchor="w", pady=(10, 5))
-        frame_goals = ctk.CTkFrame(self.scroll, fg_color="#F8F9F9", corner_radius=6, border_width=1, border_color="#D5DBDB")
-        frame_goals.pack(fill="x", pady=5, padx=5)
+        self.tabview = ctk.CTkTabview(self)
+        self.tabview.pack(fill="both", expand=True, padx=5, pady=5)
         
-        col1 = ctk.CTkFrame(frame_goals, fg_color="transparent")
-        col1.pack(side="left", fill="both", expand=True, padx=10, pady=10)
-        ctk.CTkLabel(col1, text="Metas establecidas por el consultante:", font=("Arial", 12, "bold")).pack(anchor="w")
-        self.txt_patient_goals = ctk.CTkTextbox(col1, height=80, fg_color="#e8f6f3", text_color="#333")
-        self.txt_patient_goals.pack(fill="x", pady=5)
+        self.tab_deprof = self.tabview.add("Fase 1: Desprofesionalización")
+        self.tab_estrategias = self.tabview.add("Fase 2: Estrategias Funcionales")
+        self.tab_biblioteca = self.tabview.add("📚 Biblioteca de Técnicas") # Nueva pestaña
         
-        patient_data = self.patient_manager.get_patient_by_id(self.patient_id)
-        if patient_data and patient_data.get('goals'):
-            self.txt_patient_goals.insert("0.0", patient_data['goals'])
-        self.txt_patient_goals.configure(state="disabled") 
+        self._build_deprofessionalization_tab()
+        self._build_strategies_tab()
+        self._build_library_tab() # Constructor de la nueva pestaña
 
-        col2 = ctk.CTkFrame(frame_goals, fg_color="transparent")
-        col2.pack(side="left", fill="both", expand=True, padx=10, pady=10)
-        ctk.CTkLabel(col2, text="Objetivos terapéuticos (Redacción):", font=("Arial", 12, "bold"), text_color="#d35400").pack(anchor="w")
-        self.txt_objectives = ctk.CTkTextbox(col2, height=80)
-        self.txt_objectives.pack(fill="x", pady=5)
+        self.btn_save = ctk.CTkButton(self, text="💾 GUARDAR PLAN COMPLETO", height=45, 
+                                      command=self._save_data, font=("Roboto", 14, "bold"))
+        self.btn_save.pack(fill="x", pady=15, padx=5)
 
-        # B. ANÁLISIS DE SOLUCIONES
-        ctk.CTkLabel(self.scroll, text="B. Análisis de Soluciones", font=("Arial", 14, "bold"), text_color="#2c3e50").pack(anchor="w", pady=(20, 5))
-        frame_sols = ctk.CTkFrame(self.scroll, fg_color="#F8F9F9", border_width=1, border_color="#D5DBDB")
-        frame_sols.pack(fill="x", pady=5, padx=5)
+    def _build_library_tab(self):
+        """Pestaña de consulta para seleccionar técnicas basadas en el catálogo de la BD"""
+        frame = ctk.CTkFrame(self.tab_biblioteca, fg_color="transparent")
+        frame.pack(fill="both", expand=True, padx=10, pady=10)
+
+        # Filtro por categoría clínica (Punto 1 conservado)
+        filter_frame = ctk.CTkFrame(frame, fg_color="transparent")
+        filter_frame.pack(fill="x", pady=(0, 10))
         
-        sol_row1 = ctk.CTkFrame(frame_sols, fg_color="transparent")
-        sol_row1.pack(fill="x", padx=10, pady=5)
-        ctk.CTkCheckBox(sol_row1, text="Cambio macrocontingencial", variable=self.var_s1).pack(side="left", padx=15)
-        ctk.CTkCheckBox(sol_row1, text="Mantenimiento macrocontingencial", variable=self.var_s2).pack(side="left", padx=15)
-        ctk.CTkCheckBox(sol_row1, text="Mantenimiento microcontingencial", variable=self.var_s3).pack(side="left", padx=15)
+        ctk.CTkLabel(filter_frame, text="Filtrar por Enfoque:").pack(side="left", padx=5)
+        self.combo_filter = ctk.CTkComboBox(filter_frame, values=["Todas", "Cognitivo-Conductual", "ABA", "Contextual/ACT", "Regulación Emocional", "Mindfulness"],
+                                            command=lambda _: self._refresh_library_table())
+        self.combo_filter.set("Todas")
+        self.combo_filter.pack(side="left", padx=5)
 
-        sol_row2 = ctk.CTkFrame(frame_sols, fg_color="transparent")
-        sol_row2.pack(fill="x", padx=10, pady=5)
-        ctk.CTkCheckBox(sol_row2, text="Cambiar la conducta de otros", variable=self.var_s4).pack(side="left", padx=15)
-        ctk.CTkCheckBox(sol_row2, text="Cambiar la conducta propia", variable=self.var_s5).pack(side="left", padx=15)
-        ctk.CTkCheckBox(sol_row2, text="Opción nuevas microcontingencias", variable=self.var_s6).pack(side="left", padx=15)
+        # Tabla de técnicas (Uso de Treeview para visualización clara)
+        style = ttk.Style()
+        style.configure("Treeview", rowheight=30)
+        
+        self.tree = ttk.Treeview(frame, columns=("Nombre", "Objetivo"), show="headings")
+        self.tree.heading("Nombre", text="Nombre de la Técnica")
+        self.tree.heading("Objetivo", text="Objetivo Clínico")
+        self.tree.column("Nombre", width=200)
+        self.tree.column("Objetivo", width=450)
+        self.tree.pack(fill="both", expand=True, side="left")
 
-        sol_row3 = ctk.CTkFrame(frame_sols, fg_color="transparent")
-        sol_row3.pack(fill="x", padx=10, pady=(5, 10))
-        ctk.CTkCheckBox(sol_row3, text="Opciones funcionales (mismas conductas)", variable=self.var_s7).pack(side="left", padx=15)
+        scrollbar = ttk.Scrollbar(frame, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscroll=scrollbar.set)
+        scrollbar.pack(side="right", fill="y")
 
-        # C. ESTRATEGIAS
-        ctk.CTkLabel(self.scroll, text="C. Estrategias de Intervención", font=("Arial", 14, "bold"), text_color="#2c3e50").pack(anchor="w", pady=(20, 5))
-        self.txt_morph = self._add_text_area("1. Alteración de la Morfología (¿Qué hará de forma diferente?)")
-        self.txt_actors = self._add_text_area("2. Alteración de los Actores (¿Cómo interactuará con los demás?)")
-        self.txt_context = self._add_text_area("3. Alteración del Contexto (Social/Físico)")
+        self.tree.bind("<<TreeviewSelect>>", self._on_technique_double_click)
+        self._refresh_library_table()
 
-        # D. TÉCNICAS
-        ctk.CTkLabel(self.scroll, text="D. Selección de Técnicas", font=("Arial", 14, "bold"), text_color="#2c3e50").pack(anchor="w", pady=(20, 5))
-        ctk.CTkLabel(self.scroll, text="(Puedes buscar y enviar técnicas desde la pestaña 'Biblioteca de Técnicas')", text_color="gray", font=("Arial", 11)).pack(anchor="w", padx=10)
-        self.txt_techs = ctk.CTkTextbox(self.scroll, height=80)
-        self.txt_techs.pack(fill="x", padx=10, pady=5)
+    def _refresh_library_table(self):
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        
+        category = self.combo_filter.get()
+        techniques = self.manager.get_all_techniques(category)
+        for t in techniques:
+            self.tree.insert("", "end", values=(t['name'], t['objective']), tags=(t['method'],))
 
-        # BOTÓN GUARDAR
-        ctk.CTkButton(self.scroll, text="💾 GUARDAR PLAN DE INTERVENCIÓN", fg_color="#27ae60", font=("Arial", 14, "bold"), height=40, command=self._save_plan).pack(pady=25)
+    def _on_technique_double_click(self, event):
+        """Muestra detalles de la técnica y permite copiarla al plan"""
+        selected = self.tree.selection()
+        if not selected: return
+        
+        item = self.tree.item(selected[0])
+        name = item['values'][0]
+        obj = item['values'][1]
+        method = item['tags'][0]
 
-    def _setup_tab_library(self, parent_frame):
-        # Filtros de Biblioteca
-        filter_frame = ctk.CTkFrame(parent_frame, fg_color="transparent")
-        filter_frame.pack(fill="x", padx=10, pady=10)
-        ctk.CTkLabel(filter_frame, text="Filtrar por categoría:").pack(side="left", padx=5)
+        detail = f"TÉCNICA: {name}\n\nOBJETIVO: {obj}\n\nMÉTODO: {method}\n\n¿Desea agregar el nombre de esta técnica a su plan actual?"
+        if messagebox.askyesno("Detalles de Técnica", detail):
+            current_text = self.txt_techs.get("1.0", "end-1c")
+            new_text = f"{current_text}\n- {name}" if current_text.strip() else f"- {name}"
+            self.txt_techs.delete("1.0", "end")
+            self.txt_techs.insert("0.0", new_text)
+            self.tabview.set("Fase 2: Estrategias Funcionales")
 
-        cats = ["Todas", "Cognitivo-Conductual", "ABA", "Contextual/ACT", "Regulación Emocional", "Exposición", "Habilidades", "Mindfulness", "Auto-Manejo", "Estímulos", "Motivación", "Mantenimiento", "Compasión"]
-        self.combo_filter = ctk.CTkComboBox(filter_frame, values=cats, width=200, command=self._load_library)
-        self.combo_filter.pack(side="left", padx=10)
+    def _build_deprofessionalization_tab(self):
+        scroll = ctk.CTkScrollableFrame(self.tab_deprof, fg_color="transparent")
+        scroll.pack(fill="both", expand=True)
+        
+        ctk.CTkLabel(scroll, text="Analice con el usuario los costos y beneficios de cada opción de la Matriz de Soluciones.", 
+                     font=("Roboto", 12, "italic"), text_color="#7f8c8d").pack(pady=10)
 
-        self.library_scroll = ctk.CTkScrollableFrame(parent_frame, fg_color="#F8F9F9", border_width=1, border_color="#ccc")
-        self.library_scroll.pack(fill="both", expand=True, padx=10, pady=5)
+        for option in self.solution_options:
+            frame = ctk.CTkFrame(scroll, border_width=1)
+            frame.pack(fill="x", pady=8, padx=5)
+            
+            var_selected = ctk.IntVar(value=0)
+            cb = ctk.CTkCheckBox(frame, text=option, variable=var_selected, font=("Roboto", 13, "bold"), text_color="#2980b9")
+            cb.grid(row=0, column=0, columnspan=4, sticky="w", padx=10, pady=10)
+            
+            ctk.CTkLabel(frame, text="Motivación:").grid(row=1, column=0, sticky="w", padx=10)
+            txt_mot = ctk.CTkEntry(frame, width=140); txt_mot.grid(row=1, column=1, padx=5, pady=5)
+            
+            ctk.CTkLabel(frame, text="Costo Emocional:").grid(row=1, column=2, sticky="w", padx=10)
+            txt_cost = ctk.CTkEntry(frame, width=140); txt_cost.grid(row=1, column=3, padx=5, pady=5)
+            
+            ctk.CTkLabel(frame, text="Recursos:").grid(row=2, column=0, sticky="w", padx=10)
+            txt_res = ctk.CTkEntry(frame, width=140); txt_res.grid(row=2, column=1, padx=5, pady=5)
+            
+            ctk.CTkLabel(frame, text="Efectos:").grid(row=2, column=2, sticky="w", padx=10)
+            txt_eff = ctk.CTkEntry(frame, width=140); txt_eff.grid(row=2, column=3, padx=5, pady=5)
+            
+            self.deprof_entries[option] = {
+                'selected': var_selected, 'motivation': txt_mot, 'cost': txt_cost, 
+                'resources': txt_res, 'effects': txt_eff
+            }
 
-        self._load_library("Todas")
+    def _build_strategies_tab(self):
+        scroll = ctk.CTkScrollableFrame(self.tab_estrategias, fg_color="transparent")
+        scroll.pack(fill="both", expand=True)
 
-    def _add_text_area(self, title):
-        ctk.CTkLabel(self.scroll, text=title, font=("Arial", 12, "bold"), text_color="#555").pack(anchor="w", padx=10, pady=(10,0))
-        txt = ctk.CTkTextbox(self.scroll, height=60, border_width=1, border_color="#ccc")
-        txt.pack(fill="x", padx=10, pady=5)
+        ctk.CTkLabel(scroll, text="Objetivos Terapéuticos (Ajuste Funcional):", font=("Roboto", 12, "bold")).pack(anchor="w", pady=(10,0))
+        self.txt_objs = ctk.CTkTextbox(scroll, height=60); self.txt_objs.pack(fill="x", pady=5)
+
+        ctk.CTkLabel(scroll, text="Estrategias de Intervención (Dimensiones de la Interacción):", 
+                     font=("Roboto", 14, "bold"), text_color="#27ae60").pack(anchor="w", pady=(20, 5))
+
+        grid = ctk.CTkFrame(scroll, fg_color="transparent")
+        grid.pack(fill="x"); grid.grid_columnconfigure((0, 1), weight=1)
+
+        # Parámetros funcionales derivados de Ribes
+        self.txt_adq = self._add_param_field(grid, 0, 0, "1. Adquisición de Competencias")
+        self.txt_prec = self._add_param_field(grid, 0, 1, "2. Precisión (Ajuste Dinámico)")
+        self.txt_opp = self._add_param_field(grid, 1, 0, "3. Oportunidad (Discriminación)")
+        self.txt_tend = self._add_param_field(grid, 1, 1, "4. Tendencia (Probabilidad)")
+        self.txt_eff = self._add_param_field(grid, 2, 0, "5. Relación de Efecto")
+
+        ctk.CTkLabel(scroll, text="Técnicas Seleccionadas (Doble clic en Biblioteca para agregar):", font=("Roboto", 12, "bold")).pack(anchor="w", pady=(20,0))
+        self.txt_techs = ctk.CTkTextbox(scroll, height=80); self.txt_techs.pack(fill="x", pady=5)
+
+    def _add_param_field(self, parent, row, col, label_text):
+        frame = ctk.CTkFrame(parent)
+        frame.grid(row=row, column=col, padx=5, pady=5, sticky="nsew")
+        ctk.CTkLabel(frame, text=label_text, font=("Roboto", 11, "bold")).pack(anchor="w", padx=5)
+        txt = ctk.CTkTextbox(frame, height=60); txt.pack(fill="both", expand=True, padx=5, pady=5)
         return txt
 
-    def _load_library(self, category):
-        for w in self.library_scroll.winfo_children(): 
-            w.destroy()
-            
-        techs = self.manager.get_all_techniques(category)
-
-        if not techs:
-            ctk.CTkLabel(self.library_scroll, text="No hay técnicas cargadas en esta categoría.", text_color="gray").pack(pady=20)
-            return
-
-        for t in techs:
-            card = ctk.CTkFrame(self.library_scroll, fg_color="white", corner_radius=6, border_width=1, border_color="#ddd")
-            card.pack(fill="x", pady=5, padx=5)
-
-            header = ctk.CTkFrame(card, fg_color="transparent")
-            header.pack(fill="x", padx=10, pady=5)
-
-            ctk.CTkLabel(header, text=f"📌 {t['name']} ({t['category']})", font=("Arial", 14, "bold"), text_color="#2980b9").pack(side="left")
-
-            ctk.CTkButton(header, text="➕ Enviar al Plan", width=120, height=28, fg_color="#3498db", hover_color="#2980b9",
-                          command=lambda name=t['name']: self._add_tech_to_plan(name)).pack(side="right")
-
-            body = ctk.CTkFrame(card, fg_color="transparent")
-            body.pack(fill="x", padx=10, pady=(0, 5))
-
-            ctk.CTkLabel(body, text=f"Objetivo: {t['objective']}", font=("Arial", 12, "bold"), text_color="#333", anchor="w").pack(fill="x")
-            ctk.CTkLabel(body, text=f"Método: {t['method']}", font=("Arial", 12), text_color="#555", justify="left", wraplength=700, anchor="w").pack(fill="x", pady=3)
-            ctk.CTkLabel(body, text=f"👍 Pros: {t['pros']}   |   👎 Contras: {t['cons']}", font=("Arial", 11, "italic"), text_color="#7f8c8d", anchor="w").pack(fill="x", pady=(2,5))
-
-    def _add_tech_to_plan(self, tech_name):
-        current_text = self.txt_techs.get("1.0", "end-1c").strip()
-        new_text = f"{current_text}, {tech_name}" if current_text else tech_name
-        self.txt_techs.delete("1.0", "end")
-        self.txt_techs.insert("1.0", new_text)
-        
-        # Opcional: Cambia a la pestaña del plan para que veas que se agregó
-        self.tabview.set("Plan de Intervención")
-
-    # --- Lógica de Carga y Guardado ---
-
     def _load_micros(self):
-        self.micros_data = self.micro_manager.get_available_micros(self.patient_id)
-        if self.micros_data:
-            self.combo_micros.configure(values=[f"{m[0]} - {m[1]}" for m in self.micros_data])
-            self.combo_micros.set(f"{self.micros_data[0][0]} - {self.micros_data[0][1]}")
-            self._on_micro_selected(self.combo_micros.get())
+        micros = self.manager.get_available_micros(self.patient_id)
+        if not micros:
+            self.combo_micros.set("No hay microcontingencias")
+            return
+        self.micro_map = {f"#{m[0]}: {m[1][:30]}": m[0] for m in micros}
+        display_values = list(self.micro_map.keys())
+        self.combo_micros.configure(values=display_values)
+        self.combo_micros.set(display_values[0])
+        self._on_micro_selected(display_values[0])
 
-    def _on_micro_selected(self, value):
-        if not value: return
+    def _on_micro_selected(self, choice):
+        micro_id = self.micro_map.get(choice)
+        if not micro_id: return
+        self.current_micro_id = micro_id
         self._clear_form()
-        micro_id = int(value.split(" - ")[0])
-        plan = self.manager.get_plan_by_micro(micro_id)
-        if plan:
-            self.txt_objectives.insert("0.0", plan['therapeutic_objectives'] or "")
-            self.var_s1.set(plan['sol_cambio_macro'])
-            self.var_s2.set(plan['sol_mant_macro'])
-            self.var_s3.set(plan['sol_mant_micro'])
-            self.var_s4.set(plan['sol_cambio_otros'])
-            self.var_s5.set(plan['sol_cambio_propia'])
-            self.var_s6.set(plan['sol_nuevas_micro'])
-            self.var_s7.set(plan['sol_opciones_func'])
-            self.txt_morph.insert("0.0", plan['strategy_morphology'] or "")
-            self.txt_actors.insert("0.0", plan['strategy_actors'] or "")
-            self.txt_context.insert("0.0", plan['strategy_context'] or "")
-            self.txt_techs.insert("0.0", plan['techniques_text'] or "")
+        data = self.manager.get_plan_by_micro(micro_id)
+        if data:
+            self.status_indicator.configure(text="✅ PLAN ACTIVO", text_color="#2ecc71")
+            self.txt_objs.insert("0.0", data.get('therapeutic_objectives', ''))
+            self.txt_adq.insert("0.0", data.get('strategy_adquisition', ''))
+            self.txt_prec.insert("0.0", data.get('strategy_precision', ''))
+            self.txt_opp.insert("0.0", data.get('strategy_opportunity', ''))
+            self.txt_tend.insert("0.0", data.get('strategy_tendency', ''))
+            self.txt_eff.insert("0.0", data.get('strategy_effect', ''))
+            self.txt_techs.insert("0.0", data.get('techniques_text', ''))
+            deprof_data = data.get('deprofessionalization', [])
+            for dep in deprof_data:
+                opt = dep['solution_option']
+                if opt in self.deprof_entries:
+                    w = self.deprof_entries[opt]
+                    w['selected'].set(dep['is_selected'])
+                    w['motivation'].insert(0, dep['user_motivation'])
+                    w['cost'].insert(0, dep['emotional_cost'])
+                    w['resources'].insert(0, dep['available_resources'])
+                    w['effects'].insert(0, dep['short_long_term_effects'])
+        else:
+            self.status_indicator.configure(text="⚪ SIN PLAN", text_color="gray")
 
-    def _clear_form(self):
-        self.txt_objectives.delete("1.0", "end")
-        for var in [self.var_s1, self.var_s2, self.var_s3, self.var_s4, self.var_s5, self.var_s6, self.var_s7]: var.set(0)
-        self.txt_morph.delete("1.0", "end")
-        self.txt_actors.delete("1.0", "end")
-        self.txt_context.delete("1.0", "end")
-        self.txt_techs.delete("1.0", "end")
-
-    def _save_plan(self):
-        val = self.combo_micros.get()
-        if not val: return messagebox.showwarning("Aviso", "Selecciona una microcontingencia.")
-        micro_id = int(val.split(" - ")[0])
-        
-        data = {
-            'objs': self.txt_objectives.get("1.0", "end-1c"),
-            's1': self.var_s1.get(), 's2': self.var_s2.get(), 's3': self.var_s3.get(),
-            's4': self.var_s4.get(), 's5': self.var_s5.get(), 's6': self.var_s6.get(), 's7': self.var_s7.get(),
-            'morph': self.txt_morph.get("1.0", "end-1c"),
-            'actors': self.txt_actors.get("1.0", "end-1c"),
-            'context': self.txt_context.get("1.0", "end-1c"),
+    def _save_data(self):
+        if not self.current_micro_id: return
+        plan_data = {
+            'objs': self.txt_objs.get("1.0", "end-1c"), 'adq': self.txt_adq.get("1.0", "end-1c"),
+            'prec': self.txt_prec.get("1.0", "end-1c"), 'opp': self.txt_opp.get("1.0", "end-1c"),
+            'tend': self.txt_tend.get("1.0", "end-1c"), 'eff': self.txt_eff.get("1.0", "end-1c"),
             'techs': self.txt_techs.get("1.0", "end-1c")
         }
-        success, msg = self.manager.save_plan(self.patient_id, micro_id, data)
-        if success: messagebox.showinfo("Éxito", msg)
-        else: messagebox.showerror("Error", msg)
+        deprof_data = []
+        for opt, w in self.deprof_entries.items():
+            if w['selected'].get() == 1 or w['motivation'].get():
+                deprof_data.append({
+                    'option': opt, 'selected': w['selected'].get(), 'motivation': w['motivation'].get(),
+                    'cost': w['cost'].get(), 'resources': w['resources'].get(), 'effects': w['effects'].get()
+                })
+        success, msg = self.manager.save_plan(self.patient_id, self.current_micro_id, plan_data, deprof_data)
+        if success:
+            messagebox.showinfo("Éxito", msg)
+            self._on_micro_selected(self.combo_micros.get())
+        else:
+            messagebox.showerror("Error", msg)
+
+    def _clear_form(self):
+        for w in [self.txt_objs, self.txt_adq, self.txt_prec, self.txt_opp, self.txt_tend, self.txt_eff, self.txt_techs]:
+            w.delete("1.0", "end")
+        for w in self.deprof_entries.values():
+            w['selected'].set(0)
+            for f in ['motivation', 'cost', 'resources', 'effects']: w[f].delete(0, "end")
