@@ -132,7 +132,7 @@ class MacroPanel(ctk.CTkFrame):
         self.combo_micro = ctk.CTkComboBox(frame_analisis, values=["Seleccione una microcontingencia..."])
         self.combo_micro.pack(pady=(5, 10), padx=20, fill="x")
 
-        self.btn_open_matrix = ctk.CTkButton(frame_analisis, text="📊 ABRIR MATRIZ INTERCONDUCTUAL", 
+        self.btn_open_matrix = ctk.CTkButton(frame_analisis, text="📊 ABRIR MATRIZ DE CORRESPONDENCIAS", 
                                              command=self._open_matrix_window, font=("Arial", 14, "bold"),
                                              fg_color="#16a085", hover_color="#1abc9c")
         self.btn_open_matrix.pack(pady=15)
@@ -187,7 +187,7 @@ class MacroPanel(ctk.CTkFrame):
 
     def _on_matrix_saved(self, selected_points):
         self.matrix_points = selected_points
-        self.btn_open_matrix.configure(text=f"📊 MATRIZ ACTUALIZADA ({len(self.matrix_points)} conflictos)")
+        self.btn_open_matrix.configure(text=f"📊 MATRIZ DE CORRESPONDENCIAS ({len(self.matrix_points)} conflictos)")
 
     def _save_macro(self):
         if not self.entry_group_name.get().strip():
@@ -244,7 +244,7 @@ class MacroPanel(ctk.CTkFrame):
                     self.combo_micro.set(text)
                     break
 
-        self.btn_open_matrix.configure(text=f"📊 ABRIR MATRIZ ({len(self.matrix_points)} conflictos)")
+        self.btn_open_matrix.configure(text=f"📊 ABRIR MATRIZ DE CORRESPONDENCIAS ({len(self.matrix_points)} conflictos)")
         
         self.lbl_hypothesis.configure(state="normal")
         self.lbl_hypothesis.delete("0.0", "end")

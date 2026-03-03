@@ -13,6 +13,9 @@ class EvaluationPanel(ctk.CTkFrame):
     def _setup_ui(self):
         ctk.CTkLabel(self, text="6. Evaluación del Proceso", font=("Arial", 22, "bold"), text_color="#333").pack(anchor="w", pady=(0, 10))
 
+        leyenda = "📌 NOTA: Este apartado evalúa exclusivamente la eficacia de las estrategias y el desempeño del psicólogo, NO evalúa al paciente."
+        ctk.CTkLabel(self, text=leyenda, font=("Roboto", 12, "italic"), text_color="#c0392b").pack(anchor="w", pady=(0, 10))
+
         self.tabview = ctk.CTkTabview(self, width=900, height=600)
         self.tabview.pack(fill="both", expand=True)
         self.tabview.add("Nueva Evaluación")
