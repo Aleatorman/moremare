@@ -10,7 +10,8 @@ class GenesisManager:
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT id, problem_desc FROM microcontingencies WHERE patient_id = ?", (patient_id,))
+                # CORRECCIÓN APLICADA AQUÍ: Cambio de problem_desc a label
+                cursor.execute("SELECT id, label FROM microcontingencies WHERE patient_id = ?", (patient_id,))
                 return cursor.fetchall()
         except sqlite3.Error:
             return []
@@ -30,6 +31,11 @@ class GenesisManager:
                     except: data['origin_history'] = {}
                     try: data['functional_history'] = json.loads(data['functional_history'])
                     except: data['functional_history'] = {}
+                    
+                    # CORRECCIÓN APLICADA AQUÍ: Desempaquetar los estilos interactivos
+                    try: data['interactive_styles'] = json.loads(data.get('interactive_styles') or '[]')
+                    except: data['interactive_styles'] = []
+                    
                     return data
                 return None
         except sqlite3.Error:
@@ -46,7 +52,7 @@ class GenesisManager:
                 cursor = conn.cursor()
                 # Hacemos JOIN para obtener el nombre del problema asociado
                 query = """
-                    SELECT g.*, m.problem_desc 
+                    SELECT g.*, m.label as problem_desc 
                     FROM genesis_history g
                     LEFT JOIN microcontingencies m ON g.microcontingency_id = m.id
                     WHERE g.patient_id = ?
@@ -60,9 +66,10 @@ class GenesisManager:
                     # Desempaquetar JSON
                     try: data['origin_history'] = json.loads(data['origin_history'])
                     except: data['origin_history'] = {}
-                    # (Opcional) Desempaquetar funcional si lo necesitaras en el reporte
                     try: data['functional_history'] = json.loads(data['functional_history'])
                     except: data['functional_history'] = {}
+                    try: data['interactive_styles'] = json.loads(data.get('interactive_styles') or '[]')
+                    except: data['interactive_styles'] = []
                     
                     results.append(data)
                 return results
@@ -70,14 +77,24 @@ class GenesisManager:
             print(f"Error recuperando historial génesis: {e}")
             return []
 
-    def save_genesis(self, patient_id, micro_id, origin_data, func_data):
+    def save_genesis(self, patient_id, micro_id, origin_data, func_data, interactive_styles=None):
         """Guarda (Insert) o Actualiza (Update) automáticamente."""
+        if interactive_styles is None:
+            interactive_styles = []
+            
         origin_json = json.dumps(origin_data, ensure_ascii=False)
         func_json = json.dumps(func_data, ensure_ascii=False)
+        styles_json = json.dumps(interactive_styles, ensure_ascii=False)
 
         try:
             with sqlite3.connect(self.db_path) as conn:
                 cursor = conn.cursor()
+                
+                # PRECAUCIÓN: Intenta agregar la columna interactiva si es que no existe en tu base de datos antigua
+                try:
+                    cursor.execute("ALTER TABLE genesis_history ADD COLUMN interactive_styles TEXT")
+                except sqlite3.OperationalError:
+                    pass # Si entra aquí, significa que la columna ya existía, lo cual está bien.
                 
                 # Verificamos si ya existe para decidir si hacemos UPDATE o INSERT
                 cursor.execute("SELECT id FROM genesis_history WHERE microcontingency_id = ?", (micro_id,))
@@ -87,16 +104,16 @@ class GenesisManager:
                     # ACTUALIZAR
                     cursor.execute('''
                         UPDATE genesis_history 
-                        SET origin_history = ?, functional_history = ?
+                        SET origin_history = ?, functional_history = ?, interactive_styles = ?
                         WHERE id = ?
-                    ''', (origin_json, func_json, row[0]))
+                    ''', (origin_json, func_json, styles_json, row[0]))
                     msg = "Análisis actualizado correctamente."
                 else:
                     # CREAR
                     cursor.execute('''
-                        INSERT INTO genesis_history (patient_id, microcontingency_id, origin_history, functional_history)
-                        VALUES (?, ?, ?, ?)
-                    ''', (patient_id, micro_id, origin_json, func_json))
+                        INSERT INTO genesis_history (patient_id, microcontingency_id, origin_history, functional_history, interactive_styles)
+                        VALUES (?, ?, ?, ?, ?)
+                    ''', (patient_id, micro_id, origin_json, func_json, styles_json))
                     msg = "Análisis guardado correctamente."
                 
                 conn.commit()
