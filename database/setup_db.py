@@ -7,7 +7,10 @@ def create_connection():
     if not os.path.exists('database'):
         os.makedirs('database')
     try:
-        return sqlite3.connect(DB_NAME)
+        conn = sqlite3.connect(DB_NAME)
+        # Activar Foreign Keys para que funcione el CASCADE
+        conn.execute("PRAGMA foreign_keys = ON")
+        return conn
     except sqlite3.Error as e:
         print(f"Error conectando a BD: {e}")
         return None
@@ -40,22 +43,23 @@ def create_tables(conn):
         cursor.execute('''CREATE TABLE IF NOT EXISTS macrocontingencies (id INTEGER PRIMARY KEY AUTOINCREMENT, patient_id INTEGER, group_type TEXT, group_name TEXT, beliefs_values TEXT, customs_lifestyles TEXT, intra_analysis TEXT, inter_analysis TEXT, FOREIGN KEY (patient_id) REFERENCES patients (id) ON DELETE CASCADE);''')
         cursor.execute('''CREATE TABLE IF NOT EXISTS macro_normative_functions (id INTEGER PRIMARY KEY AUTOINCREMENT, macro_id INTEGER, function_type TEXT, exercised_by TEXT, description TEXT);''')
         
-        # ---> PUNTO 3: MATRIZ DE CORRESPONDENCIAS MACROCONTINGENCIAL <---
+        # ---> MATRIZ DE CORRESPONDENCIAS CON PUENTE MICROCONTINGENCIAL <---
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS macro_correspondences (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 macro_id INTEGER NOT NULL,
+                micro_id INTEGER NOT NULL,
                 axis_1 TEXT NOT NULL, 
                 axis_2 TEXT NOT NULL, 
                 has_correspondence BOOLEAN NOT NULL DEFAULT 1,
-                FOREIGN KEY (macro_id) REFERENCES macrocontingencies (id) ON DELETE CASCADE
+                FOREIGN KEY (macro_id) REFERENCES macrocontingencies (id) ON DELETE CASCADE,
+                FOREIGN KEY (micro_id) REFERENCES microcontingencies (id) ON DELETE CASCADE
             );
         ''')
 
         # 5. GÉNESIS
         cursor.execute('''CREATE TABLE IF NOT EXISTS genesis_history (id INTEGER PRIMARY KEY AUTOINCREMENT, patient_id INTEGER, microcontingency_id INTEGER, origin_history TEXT, functional_history TEXT, FOREIGN KEY (patient_id) REFERENCES patients (id) ON DELETE CASCADE);''')
         
-        # ---> PUNTO 2: ESTILOS INTERACTIVOS <---
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS genesis_interactive_styles (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,7 +71,6 @@ def create_tables(conn):
         ''')
 
         # 6. INTERVENCIÓN
-        # ---> PUNTO 4: ESTRATEGIAS FUNCIONALES DE INTERVENCIÓN <---
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS intervention_plans (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -91,7 +94,6 @@ def create_tables(conn):
             );
         ''')
 
-        # ---> PUNTO 5: ANÁLISIS DE DESPROFESIONALIZACIÓN <---
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS deprofessionalization_analysis (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -106,11 +108,11 @@ def create_tables(conn):
             );
         ''')
 
-        # (PUNTO 1 IGNORADO - Las bibliotecas se mantienen igual para los psicólogos clínicos)
-        cursor.execute('''CREATE TABLE IF NOT EXISTS library_techniques (id INTEGER PRIMARY KEY AUTOINCREMENT, category TEXT, name TEXT, objective TEXT, method TEXT, pros TEXT, cons TEXT);''')
+        # Se corrigió añadiendo UNIQUE al nombre de la técnica
+        cursor.execute('''CREATE TABLE IF NOT EXISTS library_techniques (id INTEGER PRIMARY KEY AUTOINCREMENT, category TEXT, name TEXT UNIQUE, objective TEXT, method TEXT, pros TEXT, cons TEXT);''')
         cursor.execute('''CREATE TABLE IF NOT EXISTS library_sources (id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT);''')
 
-        # 7. EVALUACIÓN (Tablas del protocolo Delgadillo)
+        # 7. EVALUACIÓN 
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS evaluations (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -207,7 +209,7 @@ def main():
     conn = create_connection()
     if conn:
         create_tables(conn)
-        seed_library(conn) # Llenar técnicas automáticamente
+        seed_library(conn)
         conn.close()
 
 if __name__ == '__main__':

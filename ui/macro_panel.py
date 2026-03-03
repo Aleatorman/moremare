@@ -45,7 +45,6 @@ class MatrixWindow(ctk.CTkToplevel):
             
             for col, axis_2 in enumerate(self.axes):
                 if col >= row: # Evitamos duplicados procesando solo la mitad superior
-                    # Si el punto ya estaba guardado, aparece marcado
                     is_checked = (axis_1, axis_2) in self.current_points or (axis_2, axis_1) in self.current_points
                     var = ctk.IntVar(value=1 if is_checked else 0)
                     cb = ctk.CTkCheckBox(grid_frame, text="", variable=var, width=20)
@@ -74,9 +73,11 @@ class MacroPanel(ctk.CTkFrame):
         self.current_macro_id = None
         self.matrix_points = []
         self.normative_functions = []
+        self.micro_map = {} # Mapa para guardar {texto_combobox : id_micro}
 
         self._setup_ui()
         self._load_list()
+        self._load_micros()
 
     def _setup_ui(self):
         self.grid_columnconfigure(1, weight=1)
@@ -88,7 +89,6 @@ class MacroPanel(ctk.CTkFrame):
         
         ctk.CTkLabel(left_frame, text="Historial Macro", font=("Arial", 16, "bold")).pack(pady=10)
         
-        # El contenedor de la lista (Scrollable)
         self.listbox_macros = ctk.CTkScrollableFrame(left_frame)
         self.listbox_macros.pack(fill="both", expand=True, padx=10, pady=5)
         
@@ -127,6 +127,11 @@ class MacroPanel(ctk.CTkFrame):
         frame_analisis = ctk.CTkFrame(right_frame, fg_color="#f2f4f4", border_width=1)
         frame_analisis.pack(fill="x", pady=20, padx=10)
         
+        # Puente Macro-Micro
+        ctk.CTkLabel(frame_analisis, text="Vincular a Microcontingencia Situacional:", font=("Arial", 12, "bold")).pack(pady=(10, 0))
+        self.combo_micro = ctk.CTkComboBox(frame_analisis, values=["Seleccione una microcontingencia..."])
+        self.combo_micro.pack(pady=(5, 10), padx=20, fill="x")
+
         self.btn_open_matrix = ctk.CTkButton(frame_analisis, text="📊 ABRIR MATRIZ INTERCONDUCTUAL", 
                                              command=self._open_matrix_window, font=("Arial", 14, "bold"),
                                              fg_color="#16a085", hover_color="#1abc9c")
@@ -144,25 +149,38 @@ class MacroPanel(ctk.CTkFrame):
         self.btn_save.pack(pady=30, fill="x", padx=10)
 
     def _load_list(self):
-        """Refresca el panel de historial izquierdo"""
         for widget in self.listbox_macros.winfo_children():
             widget.destroy()
             
         macros = self.manager.get_macros(self.patient_id)
-        
         if not macros:
             ctk.CTkLabel(self.listbox_macros, text="Sin registros", text_color="gray").pack(pady=10)
             return
 
         for m in macros:
             m_id = m[0]
-            # Si no tiene nombre, mostramos un ID para que el botón no sea invisible
             display_name = m[1] if m[1] and m[1].strip() else f"Análisis #{m_id}"
-            
             btn = ctk.CTkButton(self.listbox_macros, text=f"📂 {display_name}", 
                                 command=lambda mid=m_id: self._load_macro(mid),
                                 fg_color="transparent", text_color=("gray10", "gray90"), anchor="w")
             btn.pack(fill="x", pady=2)
+
+    def _load_micros(self):
+        """Carga las microcontingencias disponibles para enlazarlas a la matriz"""
+        micros = self.manager.get_patient_micros(self.patient_id)
+        self.micro_map.clear()
+        
+        if not micros:
+            self.combo_micro.configure(values=["No hay microcontingencias creadas"])
+            self.combo_micro.set("No hay microcontingencias creadas")
+        else:
+            values = []
+            for m_id, label in micros:
+                text = f"[{m_id}] - {label}"
+                values.append(text)
+                self.micro_map[text] = m_id
+            self.combo_micro.configure(values=values)
+            self.combo_micro.set(values[0])
 
     def _open_matrix_window(self):
         MatrixWindow(self, self.matrix_points, self._on_matrix_saved)
@@ -172,9 +190,16 @@ class MacroPanel(ctk.CTkFrame):
         self.btn_open_matrix.configure(text=f"📊 MATRIZ ACTUALIZADA ({len(self.matrix_points)} conflictos)")
 
     def _save_macro(self):
-        # Validar que al menos tenga un nombre para el historial
         if not self.entry_group_name.get().strip():
             messagebox.showwarning("Atención", "Por favor asigne un nombre al grupo para el historial.")
+            return
+
+        # Recuperar ID de la microcontingencia seleccionada
+        selected_micro_text = self.combo_micro.get()
+        micro_id = self.micro_map.get(selected_micro_text)
+
+        if not micro_id and self.matrix_points:
+            messagebox.showwarning("Atención", "Debe registrar y seleccionar una microcontingencia antes de guardar correspondencias en la matriz.")
             return
 
         data = {
@@ -187,19 +212,17 @@ class MacroPanel(ctk.CTkFrame):
             'normative_functions': self.normative_functions
         }
 
-        # Guardar en BD (mid es el ID generado o actualizado)
-        success, msg, mid = self.manager.save_macro(self.patient_id, self.current_macro_id, data, self.matrix_points)
+        success, msg, mid = self.manager.save_macro(self.patient_id, self.current_macro_id, data, self.matrix_points, micro_id)
         
         if success:
             self.current_macro_id = mid
             messagebox.showinfo("Éxito", msg)
-            self._load_list() # Recargar historial
-            self._load_macro(mid) # Cargar para mostrar la hipótesis recién generada
+            self._load_list() 
+            self._load_macro(mid)
         else:
             messagebox.showerror("Error", msg)
 
     def _load_macro(self, macro_id):
-        """Carga un análisis específico desde la base de datos"""
         self._reset_form()
         data = self.manager.get_full_macro(macro_id)
         if not data: return
@@ -213,16 +236,22 @@ class MacroPanel(ctk.CTkFrame):
         self.normative_functions = data.get('normative_functions', [])
         self.matrix_points = data.get('matrix_points', [])
         
+        # Ajustar el combobox a la microcontingencia guardada
+        saved_micro_id = data.get('micro_id')
+        if saved_micro_id:
+            for text, m_id in self.micro_map.items():
+                if m_id == saved_micro_id:
+                    self.combo_micro.set(text)
+                    break
+
         self.btn_open_matrix.configure(text=f"📊 ABRIR MATRIZ ({len(self.matrix_points)} conflictos)")
         
-        # Mostrar la Hipótesis Clínica procesada por el MacroManager
         self.lbl_hypothesis.configure(state="normal")
         self.lbl_hypothesis.delete("0.0", "end")
         self.lbl_hypothesis.insert("0.0", data.get('clinical_hypothesis', 'Sin datos suficientes.'))
         self.lbl_hypothesis.configure(state="disabled")
 
     def _reset_form(self):
-        """Limpia el formulario para un nuevo registro"""
         self.current_macro_id = None
         self.matrix_points = []
         self.normative_functions = []
@@ -231,6 +260,9 @@ class MacroPanel(ctk.CTkFrame):
         self.txt_beliefs.delete("0.0", "end")
         self.txt_customs.delete("0.0", "end")
         
+        if self.micro_map:
+            self.combo_micro.set(list(self.micro_map.keys())[0])
+
         self.btn_open_matrix.configure(text="📊 ABRIR MATRIZ INTERCONDUCTUAL")
         self.lbl_hypothesis.configure(state="normal")
         self.lbl_hypothesis.delete("0.0", "end")

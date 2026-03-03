@@ -14,6 +14,16 @@ class MacroManager:
         except sqlite3.Error: 
             return []
 
+    def get_patient_micros(self, patient_id):
+        """Obtiene las microcontingencias registradas para usarlas como puente en la matriz"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT id, label FROM microcontingencies WHERE patient_id = ?", (patient_id,))
+                return cursor.fetchall()
+        except sqlite3.Error:
+            return []
+
     def get_full_macro(self, macro_id):
         """Recupera toda la macrocontingencia y evalúa su estado funcional"""
         try:
@@ -32,8 +42,10 @@ class MacroManager:
                 data['normative_functions'] = [dict(r) for r in cursor.fetchall()]
 
                 # Matriz de Correspondencias (Solo traemos donde NO hay correspondencia, es decir, las "X")
-                cursor.execute("SELECT axis_1, axis_2 FROM macro_correspondences WHERE macro_id = ? AND has_correspondence = 0", (macro_id,))
-                data['matrix_points'] = [(r['axis_1'], r['axis_2']) for r in cursor.fetchall()]
+                cursor.execute("SELECT micro_id, axis_1, axis_2 FROM macro_correspondences WHERE macro_id = ? AND has_correspondence = 0", (macro_id,))
+                rows = cursor.fetchall()
+                data['matrix_points'] = [(r['axis_1'], r['axis_2']) for r in rows]
+                data['micro_id'] = rows[0]['micro_id'] if rows else None
                 
                 # Generar diagnóstico funcional automático
                 data['clinical_hypothesis'] = self.analyze_correspondences(data['matrix_points'])
@@ -42,10 +54,9 @@ class MacroManager:
         except sqlite3.Error: 
             return None
 
-    def save_macro(self, patient_id, macro_id, data, non_correspondences):
+    def save_macro(self, patient_id, macro_id, data, non_correspondences, micro_id=None):
         """
-        Guarda la estructura clínica. 
-        'non_correspondences' es una lista de tuplas con los ejes que chocan, ej: [('UES', 'OSS'), ('USE', 'UEE')]
+        Guarda la estructura clínica y su cruce con la situación microcontingencial.
         """
         try:
             with sqlite3.connect(self.db_path) as conn:
@@ -79,12 +90,13 @@ class MacroManager:
                         VALUES (?,?,?,?)
                     """, (mid, nf['function_type'], nf['exercised_by'], nf['description']))
 
-                # 3. Guardar Matriz (Guardamos explícitamente las faltas de correspondencia)
-                for (axis_1, axis_2) in non_correspondences:
-                    cursor.execute("""
-                        INSERT INTO macro_correspondences (macro_id, axis_1, axis_2, has_correspondence) 
-                        VALUES (?,?,?,0)
-                    """, (mid, axis_1, axis_2))
+                # 3. Guardar Matriz (El puente Micro-Macro)
+                if micro_id:
+                    for (axis_1, axis_2) in non_correspondences:
+                        cursor.execute("""
+                            INSERT INTO macro_correspondences (macro_id, micro_id, axis_1, axis_2, has_correspondence) 
+                            VALUES (?,?,?,?,0)
+                        """, (mid, micro_id, axis_1, axis_2))
                 
                 conn.commit()
                 return True, "Análisis Macrocontingencial guardado correctamente.", mid
