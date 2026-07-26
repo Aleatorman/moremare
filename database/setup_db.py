@@ -1,13 +1,22 @@
 import sqlite3
 import os
+import sys
 
-DB_NAME = "database/clinical_app.db"
+# NUEVO: Función para calcular la ruta exacta, ya sea en .py o en el .exe portable
+def get_db_path():
+    if getattr(sys, 'frozen', False):
+        base_path = os.path.dirname(sys.executable)
+    else:
+        base_path = os.getcwd()
+    return os.path.join(base_path, "database", "clinical_app.db")
 
 def create_connection():
-    if not os.path.exists('database'):
-        os.makedirs('database')
+    db_path = get_db_path()
+    directorio_bd = os.path.dirname(db_path)
+    os.makedirs(directorio_bd, exist_ok=True)
+    
     try:
-        conn = sqlite3.connect(DB_NAME)
+        conn = sqlite3.connect(db_path)
         # Activar Foreign Keys para que funcione el CASCADE
         conn.execute("PRAGMA foreign_keys = ON")
         return conn
@@ -108,7 +117,6 @@ def create_tables(conn):
             );
         ''')
 
-        # Se corrigió añadiendo UNIQUE al nombre de la técnica
         cursor.execute('''CREATE TABLE IF NOT EXISTS library_techniques (id INTEGER PRIMARY KEY AUTOINCREMENT, category TEXT, name TEXT UNIQUE, objective TEXT, method TEXT, pros TEXT, cons TEXT);''')
         cursor.execute('''CREATE TABLE IF NOT EXISTS library_sources (id INTEGER PRIMARY KEY AUTOINCREMENT, url TEXT);''')
 
@@ -135,11 +143,9 @@ def create_tables(conn):
         ''')
 
         conn.commit()
-        print("--- Tablas creadas exitosamente ---")
     except sqlite3.Error as e: print(f"Error creando tablas: {e}")
 
 def seed_library(conn):
-    """Inserta automáticamente las 52 técnicas de tu lista cada vez que se crea la BD."""
     tecnicas = [
         ('Cognitivo-Conductual','Reestructuración Cognitiva','Identificar y cambiar patrones de pensamiento distorsionado','Identificar pensamientos automáticos, cuestionar con evidencia, buscar alternativas realistas.','Aborda la raíz, empodera al individuo.','Requiere capacidad metacognitiva, puede parecer forzada.'),
         ('Cognitivo-Conductual','Activación Conductual','Aumentar conductas que generan placer y logro.','Cronograma de actividades programadas independientemente del estado emocional.','Rompe el ciclo de la depresión.','Puede encontrar resistencia inicial por falta de motivación.'),
@@ -202,7 +208,6 @@ def seed_library(conn):
             VALUES (?, ?, ?, ?, ?, ?)
         ''', tecnicas)
         conn.commit()
-        print(f"--- {len(tecnicas)} técnicas sembradas en la biblioteca ---")
     except sqlite3.Error as e: print(f"Error sembrando biblioteca: {e}")
 
 def main():

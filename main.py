@@ -1,8 +1,12 @@
 import customtkinter as ctk
 from ui.login_window import LoginWindow
 from ui.dashboard_window import DashboardWindow
+from database import setup_db  # <-- 1. NUEVA IMPORTACIÓN AQUÍ
 
 def main():
+    # --- 2. NUEVO: Asegurarnos de que las tablas existan antes de hacer nada ---
+    setup_db.main() 
+
     # Variables para controlar el flujo fuera del login
     login_successful = False
     current_user_id = None

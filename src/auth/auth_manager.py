@@ -1,9 +1,25 @@
 import sqlite3
 import hashlib
+import os
+import sys
 
 class AuthManager:
     def __init__(self, db_path="database/clinical_app.db"):
-        self.db_path = db_path
+        # 1. Detectar automáticamente si estamos corriendo como .exe o como .py
+        if getattr(sys, 'frozen', False):
+            # Si es un ejecutable (.exe), la ruta base es donde está el .exe
+            base_path = os.path.dirname(sys.executable)
+        else:
+            # Si es el script original de Python, la ruta base es la normal
+            base_path = os.getcwd()
+
+        # 2. Unir la ruta base con el nombre de tu archivo
+        self.db_path = os.path.join(base_path, db_path)
+        
+        # 3. Crear la carpeta 'database' automáticamente si no existe
+        directorio_bd = os.path.dirname(self.db_path)
+        os.makedirs(directorio_bd, exist_ok=True)
+        
         self.fixed_user = "admin" # El usuario interno siempre será 'admin'
 
     def _hash(self, text):
