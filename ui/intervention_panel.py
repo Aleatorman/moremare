@@ -1,9 +1,9 @@
 import customtkinter as ctk
 from tkinter import messagebox, ttk
 from src.clinical.intervention.intervention_manager import InterventionManager
+import datetime
 
 class InterventionGuideWindow(ctk.CTkToplevel):
-    """Ventana de guía para llenar el panel de Intervención"""
     def __init__(self, parent):
         super().__init__(parent)
         self.title("Guía Clínica: Intervención y Desprofesionalización")
@@ -18,7 +18,6 @@ class InterventionGuideWindow(ctk.CTkToplevel):
         scroll = ctk.CTkScrollableFrame(self, fg_color="transparent")
         scroll.pack(fill="both", expand=True, padx=20, pady=10)
 
-        # FASE 1
         ctk.CTkLabel(scroll, text="FASE 1: Desprofesionalización (Toma de Decisiones)", font=("Roboto", 14, "bold")).pack(anchor="w", pady=(10,5))
         f1_text = ("El usuario debe elegir la solución, evaluando con el psicólogo:\n"
                    "• Motivación: ¿Qué tanto desea realmente implementar esta opción?\n"
@@ -27,7 +26,6 @@ class InterventionGuideWindow(ctk.CTkToplevel):
                    "• Efectos: ¿Qué pasará a corto y largo plazo si toma esa ruta?")
         ctk.CTkLabel(scroll, text=f1_text, justify="left", text_color="#2c3e50").pack(anchor="w", padx=15)
 
-        # FASE 2
         ctk.CTkLabel(scroll, text="FASE 2: Naturaleza de la Interacción (Estrategias)", font=("Roboto", 14, "bold")).pack(anchor="w", pady=(20,5))
         f2_text = ("NO programes técnicas basadas en adjetivos (ej. 'técnica para la depresión'). Selecciona la estrategia según la carencia funcional:\n\n"
                    "1. Adquisición: El usuario NO SABE cómo hacer algo. Hay que enseñarle una conducta desde cero.\n"
@@ -64,7 +62,6 @@ class InterventionPanel(ctk.CTkFrame):
         header.pack(fill="x", pady=(0, 10))
         ctk.CTkLabel(header, text="5. Intervención y Desprofesionalización", font=("Roboto", 22, "bold")).pack(side="left")
         
-        # Botón de Ayuda
         ctk.CTkButton(header, text="📖 ABRIR GUÍA CLÍNICA", fg_color="#f39c12", text_color="white", 
                       command=self._open_guide).pack(side="right", padx=10)
 
@@ -99,30 +96,39 @@ class InterventionPanel(ctk.CTkFrame):
         frame = ctk.CTkFrame(self.tab_biblioteca, fg_color="transparent")
         frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-        # LEYENDA PRECAUTORIA (Punto 5)
-        warning_txt = ("⚠️ AVISO METODOLÓGICO: Las técnicas de esta biblioteca provienen de diversas corrientes (TCC, ACT, etc.). "
-                       "Para evitar un eclecticismo inválido, su uso debe justificarse estrictamente como medios para alterar "
-                       "funciones (ej. oportunidad, tendencia) y no como 'remedios' para morfologías diagnósticas.")
+        warning_txt = ("⚠️ AVISO METODOLÓGICO: Selecciona y justifica la técnica según el Rubro Funcional "
+                       "(la función que cumple en la contingencia) para evitar un eclecticismo inválido.")
         ctk.CTkLabel(frame, text=warning_txt, text_color="#d35400", font=("Roboto", 11, "italic"), 
                      wraplength=750, justify="left").pack(fill="x", pady=(0, 10))
 
         filter_frame = ctk.CTkFrame(frame, fg_color="transparent")
         filter_frame.pack(fill="x", pady=(0, 10))
         
-        ctk.CTkLabel(filter_frame, text="Filtrar por Enfoque:").pack(side="left", padx=5)
-        self.combo_filter = ctk.CTkComboBox(filter_frame, values=["Todas", "Cognitivo-Conductual", "ABA", "Contextual/ACT", "Regulación Emocional", "Mindfulness"],
+        ctk.CTkLabel(filter_frame, text="Enfoque:").pack(side="left", padx=5)
+        self.combo_filter = ctk.CTkComboBox(filter_frame, width=140, values=["Todas", "Cognitivo-Conductual", "ABA", "Contextual/ACT", "Regulación Emocional", "Mindfulness", "Exposición", "Habilidades", "Auto-Manejo", "Estímulos", "Motivación", "Mantenimiento", "Compasión"],
                                             command=lambda _: self._refresh_library_table())
         self.combo_filter.set("Todas")
         self.combo_filter.pack(side="left", padx=5)
+        
+        ctk.CTkLabel(filter_frame, text="Rubro Funcional:").pack(side="left", padx=(15, 5))
+        self.combo_rubro = ctk.CTkComboBox(filter_frame, width=250, values=["Todos los rubros", "Alterar disposiciones", "Alterar conducta propia", "Alterar conducta de otros", "Alterar prácticas macrocontingenciales", "Sin asignar"],
+                                            command=lambda _: self._refresh_library_table())
+        self.combo_rubro.set("Todos los rubros")
+        self.combo_rubro.pack(side="left", padx=5)
+
+        ctk.CTkButton(filter_frame, text="+ Añadir Nueva Técnica", fg_color="#27ae60", hover_color="#2ecc71", 
+                      command=self._open_add_technique_modal).pack(side="right", padx=15)
 
         style = ttk.Style()
         style.configure("Treeview", rowheight=30)
         
-        self.tree = ttk.Treeview(frame, columns=("Nombre", "Objetivo"), show="headings")
+        self.tree = ttk.Treeview(frame, columns=("Nombre", "Rubro", "Objetivo"), show="headings")
         self.tree.heading("Nombre", text="Nombre de la Técnica")
+        self.tree.heading("Rubro", text="Rubro Funcional")
         self.tree.heading("Objetivo", text="Objetivo Clínico")
-        self.tree.column("Nombre", width=200)
-        self.tree.column("Objetivo", width=450)
+        self.tree.column("Nombre", width=180)
+        self.tree.column("Rubro", width=220)
+        self.tree.column("Objetivo", width=350)
         self.tree.pack(fill="both", expand=True, side="left")
 
         scrollbar = ttk.Scrollbar(frame, orient="vertical", command=self.tree.yview)
@@ -135,29 +141,35 @@ class InterventionPanel(ctk.CTkFrame):
     def _refresh_library_table(self):
         for item in self.tree.get_children(): self.tree.delete(item)
         category = self.combo_filter.get()
-        techniques = self.manager.get_all_techniques(category)
+        rubro = self.combo_rubro.get()
+        techniques = self.manager.get_all_techniques(category, rubro)
         for t in techniques:
-            self.tree.insert("", "end", values=(t['name'], t['objective']), tags=(t['method'],))
+            self.tree.insert("", "end", values=(t['name'], t.get('rubro_funcional', 'Sin asignar'), t['objective']), tags=(t['method'],))
 
     def _on_technique_double_click(self, event):
         selected = self.tree.selection()
         if not selected: return
         item = self.tree.item(selected[0])
-        name, obj = item['values'][0], item['values'][1]
+        name, rubro, obj = item['values'][0], item['values'][1], item['values'][2]
         method = item['tags'][0]
-        detail = f"TÉCNICA: {name}\n\nOBJETIVO: {obj}\n\nMÉTODO: {method}\n\n¿Desea agregar el nombre de esta técnica a su plan actual?"
+        detail = f"TÉCNICA: {name}\nRUBRO: {rubro}\n\nOBJETIVO: {obj}\n\nMÉTODO: {method}\n\n¿Desea agregar el nombre de esta técnica a su plan actual?"
         if messagebox.askyesno("Detalles de Técnica", detail):
             current_text = self.txt_techs.get("1.0", "end-1c")
-            new_text = f"{current_text}\n- {name}" if current_text.strip() else f"- {name}"
+            new_text = f"{current_text}\n- {name} ({rubro})" if current_text.strip() else f"- {name} ({rubro})"
             self.txt_techs.delete("1.0", "end")
             self.txt_techs.insert("0.0", new_text)
             self.tabview.set("Fase 2: Estrategias Funcionales")
 
     def _build_deprofessionalization_tab(self):
+        top_bar = ctk.CTkFrame(self.tab_deprof, fg_color="transparent")
+        top_bar.pack(fill="x", padx=10, pady=5)
+        
+        ctk.CTkLabel(top_bar, text="Analice con el usuario los costos y beneficios de cada opción.", font=("Roboto", 12, "italic"), text_color="#7f8c8d").pack(side="left")
+        ctk.CTkButton(top_bar, text="📄 Redactar Contrato Terapéutico", fg_color="#3498db", command=self._generate_contract).pack(side="right")
+
         scroll = ctk.CTkScrollableFrame(self.tab_deprof, fg_color="transparent")
         scroll.pack(fill="both", expand=True)
-        ctk.CTkLabel(scroll, text="Analice con el usuario los costos y beneficios de cada opción de la Matriz de Soluciones.", 
-                     font=("Roboto", 12, "italic"), text_color="#7f8c8d").pack(pady=10)
+        
         for option in self.solution_options:
             frame = ctk.CTkFrame(scroll, border_width=1)
             frame.pack(fill="x", pady=8, padx=5)
@@ -173,6 +185,52 @@ class InterventionPanel(ctk.CTkFrame):
             ctk.CTkLabel(frame, text="Efectos:").grid(row=2, column=2, sticky="w", padx=10)
             txt_eff = ctk.CTkEntry(frame, width=140); txt_eff.grid(row=2, column=3, padx=5, pady=5)
             self.deprof_entries[option] = {'selected': var_selected, 'motivation': txt_mot, 'cost': txt_cost, 'resources': txt_res, 'effects': txt_eff}
+
+    def _generate_contract(self):
+        selected_options = []
+        for opt, w in self.deprof_entries.items():
+            if w['selected'].get() == 1:
+                selected_options.append({
+                    'name': opt,
+                    'resources': w['resources'].get(),
+                    'cost': w['cost'].get()
+                })
+                
+        if not selected_options:
+            messagebox.showwarning("Atención", "Por favor, marque al menos una opción de solución con la casilla de verificación para generar el contrato.")
+            return
+
+        date_str = datetime.date.today().strftime("%d de %B de %Y")
+        
+        contract_text = f"CONTRATO TERAPÉUTICO Y ACUERDO DE DESPROFESIONALIZACIÓN\n"
+        contract_text += f"{'='*60}\n"
+        contract_text += f"Fecha: {date_str}\n\n"
+        contract_text += "Como parte del proceso de Análisis Contingencial, el usuario y el terapeuta acuerdan mutuamente llevar a cabo las siguientes rutas de solución para resolver la problemática planteada:\n\n"
+        
+        for i, opt in enumerate(selected_options):
+            contract_text += f"SOLUCIÓN {i+1}: {opt['name']}\n"
+            if opt['resources']:
+                contract_text += f"- Recursos comprometidos: {opt['resources']}\n"
+            if opt['cost']:
+                contract_text += f"- Manejo de implicaciones: Se reconoce que este paso implicará: {opt['cost']}\n"
+            contract_text += "\n"
+            
+        contract_text += "ACUERDOS DE RESPONSABILIDAD COMPARTIDA:\n"
+        contract_text += "1. El USUARIO se compromete a implementar activamente las estrategias acordadas en su vida diaria, utilizando los recursos mencionados.\n"
+        contract_text += "2. EL TERAPEUTA asume un rol de facilitador metodológico, dotando al usuario de las competencias necesarias, con el fin último de que el usuario logre autonomía e independencia del servicio psicológico.\n\n"
+        
+        contract_text += f"{'-'*25}                  {'-'*25}\n"
+        contract_text += f"    Firma del Usuario                       Firma del Terapeuta\n"
+
+        win = ctk.CTkToplevel(self)
+        win.title("Contrato Terapéutico")
+        win.geometry("700x600")
+        win.grab_set()
+        
+        ctk.CTkLabel(win, text="Contrato Generado (Puedes copiar o imprimir este texto)", font=("Roboto", 14, "bold")).pack(pady=10)
+        txt = ctk.CTkTextbox(win, font=("Consolas", 12), fg_color="#fcfcfc", text_color="black")
+        txt.pack(fill="both", expand=True, padx=20, pady=10)
+        txt.insert("0.0", contract_text)
 
     def _build_strategies_tab(self):
         scroll = ctk.CTkScrollableFrame(self.tab_estrategias, fg_color="transparent")
@@ -265,3 +323,48 @@ class InterventionPanel(ctk.CTkFrame):
         for w in self.deprof_entries.values():
             w['selected'].set(0)
             for f in ['motivation', 'cost', 'resources', 'effects']: w[f].delete(0, "end")
+
+    def _open_add_technique_modal(self):
+        win = ctk.CTkToplevel(self)
+        win.title("Añadir Nueva Técnica")
+        win.geometry("550x700")
+        win.grab_set()
+
+        scroll = ctk.CTkScrollableFrame(win, fg_color="transparent")
+        scroll.pack(fill="both", expand=True, padx=20, pady=20)
+
+        ctk.CTkLabel(scroll, text="Registrar Nueva Técnica", font=("Roboto", 18, "bold")).pack(pady=(0,15))
+
+        entries = {}
+        
+        ctk.CTkLabel(scroll, text="Categoría (Enfoque Teórico):", anchor="w").pack(fill="x")
+        entries['category'] = ctk.CTkComboBox(scroll, values=["Cognitivo-Conductual", "ABA", "Contextual/ACT", "Regulación Emocional", "Mindfulness", "Exposición", "Habilidades", "Auto-Manejo", "Estímulos", "Motivación", "Mantenimiento", "Compasión", "Otra"])
+        entries['category'].pack(fill="x", pady=(0, 10))
+
+        ctk.CTkLabel(scroll, text="Rubro Funcional (Función en la contingencia):", anchor="w", text_color="#16a085", font=("Roboto", 12, "bold")).pack(fill="x")
+        entries['rubro_funcional'] = ctk.CTkComboBox(scroll, values=["Alterar disposiciones", "Alterar conducta propia", "Alterar conducta de otros", "Alterar prácticas macrocontingenciales", "Sin asignar"])
+        entries['rubro_funcional'].pack(fill="x", pady=(0, 10))
+
+        fields = [("Nombre de la Técnica:", "name"), ("Objetivo Clínico (¿Para qué sirve?):", "objective"), 
+                  ("Método (Instrucciones breves):", "method"), ("Pros / Ventajas:", "pros"), ("Cons / Desventajas:", "cons")]
+        
+        for label_text, key in fields:
+            ctk.CTkLabel(scroll, text=label_text, anchor="w", font=("Roboto", 12, "bold")).pack(fill="x", pady=(5,2))
+            entries[key] = ctk.CTkEntry(scroll)
+            entries[key].pack(fill="x", pady=(0, 10))
+
+        def save():
+            data = {k: v.get() for k, v in entries.items()}
+            if not data['name'] or not data['objective']:
+                messagebox.showwarning("Atención", "El nombre y el objetivo son obligatorios.")
+                return
+            
+            s, m = self.manager.add_technique(data)
+            if s:
+                messagebox.showinfo("Éxito", m)
+                self._refresh_library_table()
+                win.destroy()
+            else:
+                messagebox.showerror("Error", m)
+
+        ctk.CTkButton(scroll, text="💾 GUARDAR TÉCNICA", fg_color="#27ae60", command=save, height=45, font=("Roboto", 14, "bold")).pack(pady=20, fill="x")

@@ -24,7 +24,7 @@ class ClinicalWindow(ctk.CTkToplevel):
         self.patient_data = self.patient_manager.get_patient_by_id(patient_id)
         
         title_name = self.patient_data['code_name'] if self.patient_data else "Desconocido"
-        self.title(f"Expediente Clínico: {title_name}")
+        self.title(f"Expediente: {title_name}")
         self.geometry("1200x750")
         
         # Layout Principal

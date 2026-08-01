@@ -15,7 +15,7 @@ class DashboardWindow(ctk.CTk):
         self.backup_manager = BackupManager()
         self.app_manager = AppointmentManager()
 
-        self.title("Sistema Clínico - Análisis Contingencial v1.0.0")
+        self.title("Análisis Contingencial v2.5.0")
         self.geometry("1280x720")
         self.state("zoomed") 
         
@@ -45,7 +45,7 @@ class DashboardWindow(ctk.CTk):
         # Header
         header = ctk.CTkFrame(self.sidebar, fg_color="transparent")
         header.pack(fill="x", padx=20, pady=(20, 10))
-        ctk.CTkLabel(header, text="🧠 SISTEMA\nCLÍNICO", font=("Arial", 20, "bold"), 
+        ctk.CTkLabel(header, text=" 🐘 INTERCONDUCTEAMS", font=("Arial", 20, "bold"), 
                      text_color="black", justify="left").pack(side="left")
 
         # Buscador
@@ -170,9 +170,9 @@ class DashboardWindow(ctk.CTk):
         c = ctk.CTkFrame(self.content_container, fg_color="transparent")
         c.place(relx=0.5, rely=0.5, anchor="center")
 
-        ctk.CTkLabel(c, text="🏥", font=("Arial", 80)).pack(pady=10)
+        ctk.CTkLabel(c, text="🐘", font=("Arial", 80)).pack(pady=10)
         ctk.CTkLabel(c, text="BIENVENIDO", font=("Arial", 30, "bold"), text_color="#333").pack(pady=10)
-        ctk.CTkLabel(c, text="Selecciona un paciente o gestiona tu agenda.", font=("Arial", 14), text_color="gray").pack(pady=5)
+        ctk.CTkLabel(c, text="Selecciona un asistente o gestiona tu agenda.", font=("Arial", 14), text_color="gray").pack(pady=5)
 
         ctk.CTkButton(c, text="📅 IR A MI AGENDA", font=("Arial", 14, "bold"), height=50, width=200, fg_color=self.col_blue, command=self._show_agenda_screen).pack(pady=30)
         ctk.CTkButton(c, text="💾 Crear Respaldo", fg_color="gray", width=150, command=self._do_backup).pack(pady=5)

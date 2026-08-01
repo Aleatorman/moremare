@@ -137,7 +137,8 @@ class StylesWindow(ctk.CTkToplevel):
         right_frame = ctk.CTkFrame(self, fg_color="#fdfefe", border_color="#f1c40f", border_width=2)
         right_frame.grid(row=0, column=1, sticky="nsew", padx=(0, 15), pady=15)
         
-        ctk.CTkLabel(right_frame, text="🧠 Entrenador Clínico", font=("Roboto", 18, "bold"), text_color="#d35400").pack(pady=(15, 5))
+        # ---> TEXTO ACTUALIZADO AQUÍ <---
+        ctk.CTkLabel(right_frame, text="🧠 Entrenador", font=("Roboto", 18, "bold"), text_color="#d35400").pack(pady=(15, 5))
         ctk.CTkLabel(right_frame, text="Haz clic en un campo para ver la guía", text_color="gray").pack()
         
         self.lbl_guide_title = ctk.CTkLabel(right_frame, text="Selecciona un estilo...", font=("Roboto", 14, "bold"), wraplength=350)

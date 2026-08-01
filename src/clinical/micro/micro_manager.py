@@ -3,6 +3,18 @@ import sqlite3
 class MicroManager:
     def __init__(self, db_path="database/clinical_app.db"):
         self.db_path = db_path
+        self._upgrade_db() # <-- Verifica y actualiza la BD automáticamente
+
+    def _upgrade_db(self):
+        """Agrega las nuevas columnas de competencias sin borrar los datos existentes."""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                c = conn.cursor()
+                c.execute("ALTER TABLE micro_interactions ADD COLUMN comp_afectiva TEXT DEFAULT ''")
+                c.execute("ALTER TABLE micro_interactions ADD COLUMN comp_valorativa TEXT DEFAULT ''")
+                conn.commit()
+        except sqlite3.OperationalError:
+            pass # Si da error, significa que las columnas ya existen, lo cual está perfecto.
 
     def get_available_micros(self, patient_id):
         try:
@@ -30,7 +42,7 @@ class MicroManager:
                     'physical_contexts': 'micro_contexts_physical',
                     'interactions': 'micro_interactions',
                     'inclinations': 'micro_inclinations',
-                    'tendencies': 'micro_tendencies', # Nueva tabla B5
+                    'tendencies': 'micro_tendencies', 
                     'actors': 'micro_actors',
                     'effects': 'micro_effects',
                     'noproblems': 'micro_noproblem'
@@ -89,9 +101,10 @@ class MicroManager:
                     cursor.execute("INSERT INTO micro_contexts_physical (micro_id, element, description) VALUES (?,?,?)",
                                    (micro_id, i.get('element'), i.get('description')))
 
+                # ---> MODIFICADO: Ahora guarda las 3 competencias <---
                 for i in data.get('interactions', []):
-                    cursor.execute("INSERT INTO micro_interactions (micro_id, expected, competence) VALUES (?,?,?)",
-                                   (micro_id, i.get('expected'), i.get('competence')))
+                    cursor.execute("INSERT INTO micro_interactions (micro_id, expected, competence, comp_afectiva, comp_valorativa) VALUES (?,?,?,?,?)",
+                                   (micro_id, i.get('expected'), i.get('competence'), i.get('comp_afectiva'), i.get('comp_valorativa')))
 
                 for i in data.get('inclinations', []):
                     cursor.execute("INSERT INTO micro_inclinations (micro_id, category, description) VALUES (?,?,?)",
